@@ -1,7 +1,6 @@
 <template>
   <div class="channel-container">
     <div class="chat-feed" ref="chatFeedRef">
-      <!-- 歡迎卡片 -->
       <div v-if="messages.length === 0 && !isLoading" class="welcome-card">
         <div class="welcome-icon-circle">🏗️</div>
         <div class="welcome-info">
@@ -10,25 +9,14 @@
         </div>
       </div>
 
-      <!-- 對話訊息列表 -->
       <div v-for="(msg, idx) in messages" :key="idx" :class="['chat-item', msg.role]">
-        <div class="author-tag">
-          {{ msg.role === "user" ? "提問者" : "建置合規規劃 顧問" }}
-        </div>
-
-        <div v-if="msg.role === 'user'" class="bubble user-bubble">
-          <div class="text-content">{{ msg.text }}</div>
-        </div>
-
+        <div class="author-tag">{{ msg.role === "user" ? "提問者" : "建置合規規劃 顧問" }}</div>
+        <div v-if="msg.role === 'user'" class="bubble user-bubble"><div class="text-content">{{ msg.text }}</div></div>
         <div v-else class="assistant-wrapper">
           <div v-if="isNotFound(msg.text)" class="not-found-card">
-            <div class="alert-header">
-              <span class="alert-icon">🚫</span>
-              <strong class="alert-title">我無法回答你的問題</strong>
-            </div>
+            <div class="alert-header"><span class="alert-icon">🚫</span><strong class="alert-title">我無法回答你的問題</strong></div>
             <p class="alert-sub">Context 檔案中無對應記載，系統已強制停止自動生成回答。</p>
           </div>
-
           <div v-else class="consultant-card">
             <div class="card-header">
               <div class="header-badge-group">
@@ -36,29 +24,17 @@
                 <span class="topic-title">建置合規規劃 · 分析報告</span>
               </div>
             </div>
-
             <div class="native-card-body">
               <div v-for="(block, bIdx) in parseTextBlocks(msg.text)" :key="bIdx" class="content-block">
                 <div v-if="block.type === 'item-card'" class="item-detail-card">
-                  <div class="card-item-header">
-                    <span class="blue-indicator"></span>
-                    <span class="blue-tag">條款</span>
-                    <span class="card-item-title">{{ block.title }}</span>
-                  </div>
+                  <div class="card-item-header"><span class="blue-indicator"></span><span class="blue-tag">條款</span><span class="card-item-title">{{ block.title }}</span></div>
                   <div class="card-item-body">{{ block.body }}</div>
                 </div>
-                <div v-else-if="block.type === 'conclusion'" class="conclusion-box">
-                  <div class="box-label">💡 結論</div>
-                  <div class="box-content">{{ block.text }}</div>
-                </div>
-                <div v-else-if="block.type === 'reference'" class="reference-box">
-                  <div class="box-label">📚 參考資料</div>
-                  <div class="box-content">{{ block.text }}</div>
-                </div>
+                <div v-else-if="block.type === 'conclusion'" class="conclusion-box"><div class="box-label">💡 結論</div><div class="box-content">{{ block.text }}</div></div>
+                <div v-else-if="block.type === 'reference'" class="reference-box"><div class="box-label">📚 參考資料</div><div class="box-content">{{ block.text }}</div></div>
                 <p v-else class="normal-paragraph">{{ block.text }}</p>
               </div>
             </div>
-
             <div class="card-actions">
               <button @click="copyToClipboard(msg.text)" class="action-btn">📋 一鍵複製純文字</button>
               <button @click="exportOrPrint" class="action-btn">🖨️ 匯出報告 / 列印</button>
@@ -66,18 +42,14 @@
           </div>
         </div>
       </div>
-
       <div v-if="isLoading" class="loading-indicator">資料處理與比對中，請稍候...</div>
     </div>
 
-    <!-- 輸入區域 -->
     <div class="chat-input-area">
       <div v-if="selectedFile" class="file-preview-tag">
-        <span class="file-icon">📎</span>
-        <span class="file-name" :title="selectedFile.name">{{ selectedFile.name }}</span>
+        <span class="file-icon">📎</span><span class="file-name" :title="selectedFile.name">{{ selectedFile.name }}</span>
         <button @click="removeSelectedFile" class="remove-file-btn">✕</button>
       </div>
-
       <div class="input-container">
         <input type="file" ref="fileInputRef" @change="handleFileSelect" style="display: none" accept=".txt,.pdf,.docx,.doc,.md,.csv,.xlsx,.xls,.json,.html" />
         <button @click="triggerFileInput" class="attach-btn" title="上傳檔案/文件">
@@ -92,7 +64,6 @@
 
 <script setup>
 import { ref, nextTick } from 'vue'
-
 const messages = ref([])
 const userQuery = ref('')
 const isLoading = ref(false)
@@ -104,13 +75,7 @@ const fileInputRef = ref(null)
 const triggerFileInput = () => fileInputRef.value?.click()
 const handleFileSelect = (e) => { if (e.target.files[0]) selectedFile.value = e.target.files[0] }
 const removeSelectedFile = () => { selectedFile.value = null; if (fileInputRef.value) fileInputRef.value.value = '' }
-
-const scrollToBottom = () => {
-  nextTick(() => {
-    if (chatFeedRef.value) chatFeedRef.value.scrollTop = chatFeedRef.value.scrollHeight
-  })
-}
-
+const scrollToBottom = () => { nextTick(() => { if (chatFeedRef.value) chatFeedRef.value.scrollTop = chatFeedRef.value.scrollHeight }) }
 const isNotFound = (text) => text && (text.includes("我無法回答你的問題") || text.includes("檔案內找不到對應資訊") || text.includes("已停止自動生成"))
 
 const parseTextBlocks = (rawText) => {
@@ -118,7 +83,6 @@ const parseTextBlocks = (rawText) => {
   const lines = rawText.split("\n").filter(l => l.trim() !== "")
   const blocks = []
   let currentCard = null
-
   lines.forEach((line) => {
     const trimmed = line.trim()
     if (trimmed.startsWith("結論：") || trimmed.startsWith("結論:")) {
@@ -131,33 +95,23 @@ const parseTextBlocks = (rawText) => {
       if (currentCard) blocks.push(currentCard)
       currentCard = { type: "item-card", title: trimmed.replace(/^#{1,6}\s*/, "").replace(/[*_]/g, ""), body: "" }
     } else {
-      if (currentCard) {
-        currentCard.body += (currentCard.body ? "\n" : "") + trimmed.replace(/[*_]/g, "")
-      } else {
-        blocks.push({ type: "paragraph", text: trimmed.replace(/[*_]/g, "") })
-      }
+      if (currentCard) { currentCard.body += (currentCard.body ? "\n" : "") + trimmed.replace(/[*_]/g, "") }
+      else { blocks.push({ type: "paragraph", text: trimmed.replace(/[*_]/g, "") }) }
     }
   })
   if (currentCard) blocks.push(currentCard)
   return blocks
 }
 
-const copyToClipboard = (text) => {
-  if (!text) return
-  navigator.clipboard.writeText(text.replace(/[#*_`]/g, ""))
-  alert("📋 已複製純文字內容至剪貼簿！")
-}
-
+const copyToClipboard = (text) => { if (!text) return; navigator.clipboard.writeText(text.replace(/[#*_`]/g, "")); alert("📋 已複製純文字內容至剪貼簿！") }
 const exportOrPrint = () => window.print()
 
 const runQuery = async () => {
   if ((!userQuery.value.trim() && !selectedFile.value) || isLoading.value) return
   const queryText = userQuery.value.trim()
   const attachedFile = selectedFile.value
-
   const userDisplayMsg = attachedFile ? `[已夾帶檔案：${attachedFile.name}]\n${queryText || "請協助分析此檔案。"}` : queryText
   messages.value.push({ role: "user", text: userDisplayMsg })
-
   userQuery.value = ""
   selectedFile.value = null
   if (fileInputRef.value) fileInputRef.value.value = ""
@@ -167,10 +121,7 @@ const runQuery = async () => {
   if (!attachedFile && (queryText.length < 3 || /^\d+$/.test(queryText) || /^[a-zA-Z]+$/.test(queryText))) {
     setTimeout(() => {
       isLoading.value = false
-      messages.value.push({
-        role: "assistant",
-        text: `【建置合規規劃 - 輸入引導】\n您輸入的內容「${queryText}」資訊較少。\n\n請提供您預計建置的「場域類型或設備」（例如：高架作業區、化學品儲槽），我將為您整理對應的法定防護設施清單與合規要求。`
-      })
+      messages.value.push({ role: "assistant", text: `【建置合規規劃 - 輸入引導】\n您輸入的內容「${queryText}」資訊較少。\n\n請提供您預計建置的「場域類型或設備」（例如：高架作業區、化學品儲槽），我將為您整理對應的法定防護設施清單與合規要求。` })
       scrollToBottom()
     }, 400)
     return

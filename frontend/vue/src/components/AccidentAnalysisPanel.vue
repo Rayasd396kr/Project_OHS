@@ -5,7 +5,7 @@
         <div class="welcome-icon-circle">🔍</div>
         <div class="welcome-info">
           <h3>事故原因分析 頻道</h3>
-          <p>請在此輸入現場事故經過或情境資訊。</p>
+          <p>請在此輸入現場事故經過或情境資訊，AI 將協助進行根本原因剖析與法規對應。</p>
         </div>
       </div>
 
@@ -54,7 +54,7 @@
         <button @click="triggerFileInput" class="attach-btn" title="上傳檔案/文件">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </button>
-        <input ref="queryInputRef" type="text" v-model="userQuery" @keyup.enter="runQuery" placeholder="請輸入事故發生的詳細經過與現場狀況..." />
+        <input ref="queryInputRef" type="text" v-model="userQuery" @keyup.enter="runQuery" placeholder="請輸入發生事故的詳細經過與現場狀況..." />
         <button @click="runQuery" :disabled="isLoading" class="send-action">發送</button>
       </div>
     </div>
@@ -63,7 +63,6 @@
 
 <script setup>
 import { ref, nextTick } from 'vue'
-
 const messages = ref([])
 const userQuery = ref('')
 const isLoading = ref(false)
@@ -75,11 +74,7 @@ const fileInputRef = ref(null)
 const triggerFileInput = () => fileInputRef.value?.click()
 const handleFileSelect = (e) => { if (e.target.files[0]) selectedFile.value = e.target.files[0] }
 const removeSelectedFile = () => { selectedFile.value = null; if (fileInputRef.value) fileInputRef.value.value = '' }
-
-const scrollToBottom = () => {
-  nextTick(() => { if (chatFeedRef.value) chatFeedRef.value.scrollTop = chatFeedRef.value.scrollHeight })
-}
-
+const scrollToBottom = () => { nextTick(() => { if (chatFeedRef.value) chatFeedRef.value.scrollTop = chatFeedRef.value.scrollHeight }) }
 const isNotFound = (text) => text && (text.includes("我無法回答你的問題") || text.includes("檔案內找不到對應資訊") || text.includes("已停止自動生成"))
 
 const parseTextBlocks = (rawText) => {
@@ -87,7 +82,6 @@ const parseTextBlocks = (rawText) => {
   const lines = rawText.split("\n").filter(l => l.trim() !== "")
   const blocks = []
   let currentCard = null
-
   lines.forEach((line) => {
     const trimmed = line.trim()
     if (trimmed.startsWith("結論：") || trimmed.startsWith("結論:")) {
@@ -100,31 +94,22 @@ const parseTextBlocks = (rawText) => {
       if (currentCard) blocks.push(currentCard)
       currentCard = { type: "item-card", title: trimmed.replace(/^#{1,6}\s*/, "").replace(/[*_]/g, ""), body: "" }
     } else {
-      if (currentCard) {
-        currentCard.body += (currentCard.body ? "\n" : "") + trimmed.replace(/[*_]/g, "")
-      } else {
-        blocks.push({ type: "paragraph", text: trimmed.replace(/[*_]/g, "") })
-      }
+      if (currentCard) { currentCard.body += (currentCard.body ? "\n" : "") + trimmed.replace(/[*_]/g, "") }
+      else { blocks.push({ type: "paragraph", text: trimmed.replace(/[*_]/g, "") }) }
     }
   })
   if (currentCard) blocks.push(currentCard)
   return blocks
 }
 
-const copyToClipboard = (text) => {
-  if (!text) return
-  navigator.clipboard.writeText(text.replace(/[#*_`]/g, ""))
-  alert("📋 已複製純文字內容至剪貼簿！")
-}
+const copyToClipboard = (text) => { if (!text) return; navigator.clipboard.writeText(text.replace(/[#*_`]/g, "")); alert("📋 已複製純文字內容至剪貼簿！") }
 
 const runQuery = async () => {
   if ((!userQuery.value.trim() && !selectedFile.value) || isLoading.value) return
   const queryText = userQuery.value.trim()
   const attachedFile = selectedFile.value
-
   const userDisplayMsg = attachedFile ? `[已夾帶檔案：${attachedFile.name}]\n${queryText || "請協助分析此檔案。"}` : queryText
   messages.value.push({ role: "user", text: userDisplayMsg })
-
   userQuery.value = ""
   selectedFile.value = null
   if (fileInputRef.value) fileInputRef.value.value = ""
@@ -134,10 +119,7 @@ const runQuery = async () => {
   if (!attachedFile && (queryText.length < 3 || /^\d+$/.test(queryText) || /^[a-zA-Z]+$/.test(queryText))) {
     setTimeout(() => {
       isLoading.value = false
-      messages.value.push({
-        role: "assistant",
-        text: `【事故原因分析 - 輸入引導】\n您輸入的內容「${queryText}」資訊較少。\n\n請簡述「現場事故經過」（如：人員自施工架跌落），我將為您進行 RCA 根本原因分析並提供改善對策。`
-      })
+      messages.value.push({ role: "assistant", text: `【事故原因分析 - 輸入引導】\n您輸入的內容「${queryText}」資訊較少。\n\n請簡述「現場事故經過」（如：人員自施工架跌落），我將為您進行 RCA 根本原因分析並提供改善對策。` })
       scrollToBottom()
     }, 400)
     return

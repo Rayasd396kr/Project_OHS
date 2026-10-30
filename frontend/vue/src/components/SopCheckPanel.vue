@@ -2,15 +2,15 @@
   <div class="channel-container">
     <div class="chat-feed" ref="chatFeedRef">
       <div v-if="messages.length === 0 && !isLoading" class="welcome-card">
-        <div class="welcome-icon-circle">🔍</div>
+        <div class="welcome-icon-circle">📋</div>
         <div class="welcome-info">
-          <h3>事故原因分析 頻道</h3>
-          <p>請在此輸入現場事故經過或情境資訊。</p>
+          <h3>SOP 合規檢查 頻道</h3>
+          <p>請在此貼上或透過加號按鈕上傳需檢查之 SOP 檔案。</p>
         </div>
       </div>
 
       <div v-for="(msg, idx) in messages" :key="idx" :class="['chat-item', msg.role]">
-        <div class="author-tag">{{ msg.role === "user" ? "提問者" : "事故原因分析 顧問" }}</div>
+        <div class="author-tag">{{ msg.role === "user" ? "提問者" : "SOP 合規檢查 顧問" }}</div>
         <div v-if="msg.role === 'user'" class="bubble user-bubble"><div class="text-content">{{ msg.text }}</div></div>
         <div v-else class="assistant-wrapper">
           <div v-if="isNotFound(msg.text)" class="not-found-card">
@@ -21,7 +21,7 @@
             <div class="card-header">
               <div class="header-badge-group">
                 <span class="channel-badge">數位職安顧問</span>
-                <span class="topic-title">事故原因分析 · 分析報告</span>
+                <span class="topic-title">SOP 合規檢查 · 分析報告</span>
               </div>
             </div>
             <div class="native-card-body">
@@ -54,7 +54,7 @@
         <button @click="triggerFileInput" class="attach-btn" title="上傳檔案/文件">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </button>
-        <input ref="queryInputRef" type="text" v-model="userQuery" @keyup.enter="runQuery" placeholder="請輸入事故發生的詳細經過與現場狀況..." />
+        <input ref="queryInputRef" type="text" v-model="userQuery" @keyup.enter="runQuery" placeholder="請輸入文字或點擊 ＋ 號上傳 SOP 檔案..." />
         <button @click="runQuery" :disabled="isLoading" class="send-action">發送</button>
       </div>
     </div>
@@ -63,7 +63,6 @@
 
 <script setup>
 import { ref, nextTick } from 'vue'
-
 const messages = ref([])
 const userQuery = ref('')
 const isLoading = ref(false)
@@ -75,11 +74,7 @@ const fileInputRef = ref(null)
 const triggerFileInput = () => fileInputRef.value?.click()
 const handleFileSelect = (e) => { if (e.target.files[0]) selectedFile.value = e.target.files[0] }
 const removeSelectedFile = () => { selectedFile.value = null; if (fileInputRef.value) fileInputRef.value.value = '' }
-
-const scrollToBottom = () => {
-  nextTick(() => { if (chatFeedRef.value) chatFeedRef.value.scrollTop = chatFeedRef.value.scrollHeight })
-}
-
+const scrollToBottom = () => { nextTick(() => { if (chatFeedRef.value) chatFeedRef.value.scrollTop = chatFeedRef.value.scrollHeight }) }
 const isNotFound = (text) => text && (text.includes("我無法回答你的問題") || text.includes("檔案內找不到對應資訊") || text.includes("已停止自動生成"))
 
 const parseTextBlocks = (rawText) => {
@@ -87,7 +82,6 @@ const parseTextBlocks = (rawText) => {
   const lines = rawText.split("\n").filter(l => l.trim() !== "")
   const blocks = []
   let currentCard = null
-
   lines.forEach((line) => {
     const trimmed = line.trim()
     if (trimmed.startsWith("結論：") || trimmed.startsWith("結論:")) {
@@ -100,48 +94,32 @@ const parseTextBlocks = (rawText) => {
       if (currentCard) blocks.push(currentCard)
       currentCard = { type: "item-card", title: trimmed.replace(/^#{1,6}\s*/, "").replace(/[*_]/g, ""), body: "" }
     } else {
-      if (currentCard) {
-        currentCard.body += (currentCard.body ? "\n" : "") + trimmed.replace(/[*_]/g, "")
-      } else {
-        blocks.push({ type: "paragraph", text: trimmed.replace(/[*_]/g, "") })
-      }
+      if (currentCard) { currentCard.body += (currentCard.body ? "\n" : "") + trimmed.replace(/[*_]/g, "") }
+      else { blocks.push({ type: "paragraph", text: trimmed.replace(/[*_]/g, "") }) }
     }
   })
   if (currentCard) blocks.push(currentCard)
   return blocks
 }
 
-const copyToClipboard = (text) => {
-  if (!text) return
-  navigator.clipboard.writeText(text.replace(/[#*_`]/g, ""))
-  alert("📋 已複製純文字內容至剪貼簿！")
-}
+const copyToClipboard = (text) => { if (!text) return; navigator.clipboard.writeText(text.replace(/[#*_`]/g, "")); alert("📋 已複製純文字內容至剪貼簿！") }
 
 const runQuery = async () => {
   if ((!userQuery.value.trim() && !selectedFile.value) || isLoading.value) return
   const queryText = userQuery.value.trim()
   const attachedFile = selectedFile.value
-
   const userDisplayMsg = attachedFile ? `[已夾帶檔案：${attachedFile.name}]\n${queryText || "請協助分析此檔案。"}` : queryText
   messages.value.push({ role: "user", text: userDisplayMsg })
-
   userQuery.value = ""
   selectedFile.value = null
   if (fileInputRef.value) fileInputRef.value.value = ""
   isLoading.value = true
   scrollToBottom()
 
-  const isShortText = queryText.length < 3
-  const isOnlyNum = /^\d+$/.test(queryText)
-  const isOnlyAlpha = /^[a-zA-Z]+$/.test(queryText)
-
-  if (!attachedFile && (isShortText || isOnlyNum || isOnlyAlpha)) {
+  if (!attachedFile && (queryText.length < 3 || /^\d+$/.test(queryText) || /^[a-zA-Z]+$/.test(queryText))) {
     setTimeout(() => {
       isLoading.value = false
-      messages.value.push({
-        role: "assistant",
-        text: `【事故原因分析 - 輸入引導】\n您輸入的內容「${queryText}」資訊較少。\n\n請簡述「現場事故經過」（如：人員自施工架跌落），我將為您進行 RCA 根本原因分析並提供改善對策。`
-      })
+      messages.value.push({ role: "assistant", text: `【SOP 合規檢查 - 輸入引導】\n您輸入的內容「${queryText}」資訊較少。\n\n您可以點擊對話框旁的「＋」號上傳檔案，或直接「貼上您的 SOP 內文」，我將為您比對最新職業安全衛生法規。` })
       scrollToBottom()
     }, 400)
     return
